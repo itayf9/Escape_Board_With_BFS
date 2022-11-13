@@ -5,8 +5,8 @@
 #include <iostream>
 using namespace std;
 
-#define MAXCOLS 1000
-#define MAXROWS 1000
+#define MAXCOLS 100
+#define MAXROWS 100
 
 typedef struct Point 
 {
@@ -29,7 +29,7 @@ bool isValid(int row, int col);
 void writeAnswerToFile(string fileName, bool foundPath, string path);
 void solve(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& player, vector<Point>& destinations);
 void BFS(vector<vector <bool>>& mat, Point src, Point dest, string& path);
-vector<vector <char>> readFile(string fileName, Point& player, vector<Point>& ghosts, vector<Point>& destinations);
+vector<string> readFile(string fileName, Point& player, vector<Point>& ghosts, vector<Point>& destinations);
 //--------------------------------------------------------------------------------------//
 
 int main(int argc, char* argv[])
@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
 	vector<Point> ghosts;
 	Point player;
 	vector<Point> destinations;
-	vector<vector <char>> board = readFile(argv[1], player, ghosts, destinations);
+	vector<string> board = readFile(argv[1], player, ghosts, destinations);
 
 	vector<vector <bool>> boardAsGraph(N);
 	for (int i = 0; i < N; i++)
@@ -53,6 +53,7 @@ int main(int argc, char* argv[])
 			}
 		}
 	solve(boardAsGraph, ghosts, player, destinations);
+	cout << "Solved successfully";
 }
 //--------------------------------------------------------------------------------------//
 bool isValid(int row, int col)
@@ -62,9 +63,7 @@ bool isValid(int row, int col)
 //--------------------------------------------------------------------------------------//
 void solve(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& player, vector<Point>& destinations)
 {
-	string currentPath;
-	int minPathSteps = INT16_MAX;
-
+	int minPathSteps = INT32_MAX;
 
 	// goes through destinations
 	for (int i = 0; i < destinations.size(); i++)
@@ -72,6 +71,7 @@ void solve(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& pl
 		// goes though ghosts
 		for (int j = 0; j < ghosts.size(); j++)
 		{
+			string currentPath = "";
 			BFS(boardAsGraph, ghosts[j], destinations[i], currentPath);
 
 			if (currentPath.length() < minPathSteps)
@@ -81,6 +81,7 @@ void solve(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& pl
 		}
 
 		// goes to the player
+		string currentPath = "";
 		BFS(boardAsGraph, player, destinations[i], currentPath);
 		if (currentPath.length() < minPathSteps)
 		{
@@ -99,14 +100,14 @@ void BFS(vector<vector <bool>>& mat,Point src, Point dest, string& path)
 
 	// Stores the distance for each
 	// cell from the source cell
-	int d[1000][1000];
+	int d[MAXROWS][MAXCOLS];
 	memset(d, -1, sizeof d);
 
 	// Distance of start cell is 0
 	d[src.y][src.x] = 0;
 
 	// Initialize a visited array to track the positions we are going to explore
-	bool visited[1000][1000];
+	bool visited[MAXROWS][MAXCOLS];
 	memset(visited, false, sizeof visited);
 
 	// Mark source cell as visited
@@ -183,7 +184,7 @@ void BFS(vector<vector <bool>>& mat,Point src, Point dest, string& path)
 
 			// If the current cell is valid
 			// cell and can be traversed
-			if (isValid(row, col) && (mat[row][col] == false) && !visited[row][col])
+			if (isValid(row, col) && (mat[row][col]) && !visited[row][col])
 			{
 				// Mark the adjacent cells as visited
 				visited[row][col] = true;
@@ -203,7 +204,7 @@ void BFS(vector<vector <bool>>& mat,Point src, Point dest, string& path)
 		return;
 }
 //--------------------------------------------------------------------------------------//
-vector<vector <char>> readFile(string fileName, Point& player, vector<Point>& ghosts, vector<Point>& destinations) // opened the next screen file, read the data from it, and writes it to the 'board'
+vector<string> readFile(string fileName, Point& player, vector<Point>& ghosts, vector<Point>& destinations) // opened the next screen file, read the data from it, and writes it to the 'board'
 {
 	char currChar;
 
@@ -216,13 +217,18 @@ vector<vector <char>> readFile(string fileName, Point& player, vector<Point>& gh
 
 	// read N & M first
 	file >> N >> M;
+	currChar = file.get(); // get the extra \n
 
-	vector<vector <char>> board(N);
+	vector<string> board(N);
 
 	for (int i = 0; i < N; i++) // fills the board, and converts the file's data to the borad's symbols
 		for (int j = 0; j < M; j++)
 		{
 			currChar = file.get();
+			if (currChar == '\n') 
+			{
+				currChar = file.get();
+			}
 
 			switch (currChar)
 			{
@@ -243,12 +249,11 @@ vector<vector <char>> readFile(string fileName, Point& player, vector<Point>& gh
 
 			case '#':
 				break;
-
 			default:
 				cout << "bad file. could not read all characters";
 				return board;
 			}
-			board[i].push_back(currChar);
+			board[i] += currChar;
 		}
 	file.close();
 	return board;
