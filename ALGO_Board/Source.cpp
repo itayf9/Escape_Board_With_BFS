@@ -266,4 +266,5 @@ void writeAnswerToFile(string fileName, bool foundPath, string path)
 	{
 		file << "NO" << endl;
 	}
+	file.close();
 }
