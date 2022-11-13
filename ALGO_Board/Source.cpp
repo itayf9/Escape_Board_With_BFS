@@ -29,7 +29,7 @@ bool isValid(int row, int col);
 void writeAnswerToFile(string fileName, bool foundPath, string path);
 void solve(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& player, vector<Point>& destinations);
 void BFS(vector<vector <bool>>& mat, Point src, Point dest, string& path);
-void readFile(string fileName, Point& player, vector<Point>& ghosts, vector<Point>& destinations, vector<vector <char>>& board);
+vector<vector <char>> readFile(string fileName, Point& player, vector<Point>& ghosts, vector<Point>& destinations);
 //--------------------------------------------------------------------------------------//
 
 int main(int argc, char* argv[])
@@ -37,8 +37,7 @@ int main(int argc, char* argv[])
 	vector<Point> ghosts;
 	Point player;
 	vector<Point> destinations;
-	vector<vector <char>> board;
-	readFile(argv[1], player, ghosts, destinations, board);
+	vector<vector <char>> board = readFile(argv[1], player, ghosts, destinations);
 
 	vector<vector <bool>> boardAsGraph(N);
 	for (int i = 0; i < N; i++)
@@ -64,7 +63,7 @@ bool isValid(int row, int col)
 void solve(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& player, vector<Point>& destinations)
 {
 	string currentPath;
-	int minPathSteps = INT16_MAX;
+	int minPathSteps = INT32_MAX;
 
 
 	// goes through destinations
@@ -85,12 +84,12 @@ void solve(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& pl
 		BFS(boardAsGraph, player, destinations[i], currentPath);
 		if (currentPath.length() < minPathSteps)
 		{
-			writeAnswerToFile("res", true, currentPath);
+			writeAnswerToFile("res.txt", true, currentPath);
 			return;
 		}
 	}
 
-	writeAnswerToFile("res", false, "");
+	writeAnswerToFile("res.txt", false, "");
 }
 //--------------------------------------------------------------------------------------//
 void BFS(vector<vector <bool>>& mat,Point src, Point dest, string& path)
@@ -204,7 +203,7 @@ void BFS(vector<vector <bool>>& mat,Point src, Point dest, string& path)
 		return;
 }
 //--------------------------------------------------------------------------------------//
-void readFile(string fileName, Point& player, vector<Point>& ghosts, vector<Point>& destinations, vector<vector <char>>& board) // opened the next screen file, read the data from it, and writes it to the 'board'
+vector<vector <char>> readFile(string fileName, Point& player, vector<Point>& ghosts, vector<Point>& destinations) // opened the next screen file, read the data from it, and writes it to the 'board'
 {
 	int i, j;
 	char currChar;
@@ -218,6 +217,7 @@ void readFile(string fileName, Point& player, vector<Point>& ghosts, vector<Poin
 
 	// read N & M first
 	file >> N >> M;
+	vector<vector <char>> board(N);
 
 	for (i = 0; i < N; i++) // fills the board, and converts the file's data to the borad's symbols
 		for (j = 0; j < M; j++)
