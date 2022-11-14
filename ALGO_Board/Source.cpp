@@ -52,8 +52,16 @@ int main(int argc, char* argv[])
 				boardAsGraph[i].push_back(false);
 			}
 		}
+
+	time_t start, end;
+	time(&start);
+	ios_base::sync_with_stdio(false);
 	solve(boardAsGraph, ghosts, player, destinations);
-	cout << "Solved successfully";
+	time(&end);
+	double time_taken = double(end - start);
+
+
+	cout << "Solved successfully" << time_taken << endl;
 }
 //--------------------------------------------------------------------------------------//
 bool isValid(int row, int col)
@@ -63,11 +71,11 @@ bool isValid(int row, int col)
 //--------------------------------------------------------------------------------------//
 void solve(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& player, vector<Point>& destinations)
 {
-	int minPathSteps = INT32_MAX;
 
 	// goes through destinations
 	for (int i = 0; i < destinations.size(); i++)
 	{
+		int minPathSteps = INT32_MAX;
 		// goes though ghosts
 		for (int j = 0; j < ghosts.size(); j++)
 		{
@@ -98,17 +106,25 @@ void BFS(vector<vector <bool>>& mat,Point src, Point dest, string& path)
 	int dRow[] = { -1, 0, 0, 1 };
 	int dCol[] = { 0, -1, 1, 0 };
 
-	// Stores the distance for each
-	// cell from the source cell
-	int d[MAXROWS][MAXCOLS];
-	memset(d, -1, sizeof d);
+	// Stores the distance for each cell from the source cell
+	
+	// int d[MAXROWS][MAXCOLS];
+
+	vector<vector<int>> d(N);
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < M; j++)
+			d[i].push_back(-1);
 
 	// Distance of start cell is 0
 	d[src.y][src.x] = 0;
 
 	// Initialize a visited array to track the positions we are going to explore
-	bool visited[MAXROWS][MAXCOLS];
-	memset(visited, false, sizeof visited);
+	// bool visited[MAXROWS][MAXCOLS];
+
+	vector<vector<bool>> visited(N);
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < M; j++)
+			visited[i].push_back(false);
 
 	// Mark source cell as visited
 	visited[src.y][src.x] = true;
@@ -241,10 +257,8 @@ vector<string> readFile(string fileName, Point& player, vector<Point>& ghosts, v
 				break;
 
 			case '.': // exit points == dest
-				destinations.push_back(Point(j, i));
-				break;
-
-			case ' ':
+				if (j == 0 || i == 0 || j == M - 1 || i == N - 1)
+					destinations.push_back(Point(j, i));
 				break;
 
 			case '#':
