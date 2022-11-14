@@ -60,8 +60,7 @@ int main(int argc, char* argv[])
 	time(&end);
 	double time_taken = double(end - start);
 
-
-	cout << "Solved successfully" << time_taken << endl;
+	cout << "Solved successfully " << time_taken << endl;
 }
 //--------------------------------------------------------------------------------------//
 bool isValid(int row, int col)
