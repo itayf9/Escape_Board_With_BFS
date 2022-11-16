@@ -84,7 +84,7 @@ void solve(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& pl
 		BFS(d, visited, boardAsGraph, player, destinations[i], currentPath);
 		if (currentPath.length() < minPathSteps)
 		{
-			writeAnswerToFile("res", true, currentPath);
+			writeAnswerToFile("output.txt", true, currentPath);
 			return;
 		}
 
@@ -101,7 +101,7 @@ void solve(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& pl
 		}
 	}
 
-	writeAnswerToFile("res.txt", false, "");
+	writeAnswerToFile("output.txt", false, "");
 }
 //--------------------------------------------------------------------------------------//
 void BFS(vector<vector<int>>& distances, vector<vector<bool>>& visited, vector<vector <bool>>& mat,Point src, Point dest, string& path)
