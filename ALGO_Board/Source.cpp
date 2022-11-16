@@ -51,6 +51,9 @@ int main(int argc, char* argv[])
 				boardAsGraph[i].push_back(false);
 			}
 		}
+	vector<vector<int>> d(N, vector<int>(M, -1));
+	vector<vector<bool>> visited(N, vector<bool>(M, false));
+	string path = "";
 
 	using std::chrono::high_resolution_clock;
 	using std::chrono::duration_cast;
@@ -59,6 +62,7 @@ int main(int argc, char* argv[])
 
 	auto t1 = high_resolution_clock::now();
 	solve(boardAsGraph, ghosts, player, destinations);
+	BFS(d, visited, boardAsGraph, player, destinations[0], path);
 	auto t2 = high_resolution_clock::now();
 	auto ms_int = duration_cast<milliseconds>(t2 - t1);
 	duration<double, std::milli> time_taken = t2 - t1;	
@@ -74,19 +78,16 @@ void solve(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& pl
 {
 	vector<vector<int>> d(N, vector<int>(M, -1));
 	vector<vector<bool>> visited(N, vector<bool>(M, false));
+	bool pacmanEscaped;
 
 	// goes through destinations
 	for (int i = 0; i < destinations.size(); i++)
 	{
-		int minPathSteps = INT32_MAX;
+		pacmanEscaped = true;
 		// goes to the player
-		string currentPath = "";
-		BFS(d, visited, boardAsGraph, player, destinations[i], currentPath);
-		if (currentPath.length() < minPathSteps)
-		{
-			writeAnswerToFile("output.txt", true, currentPath);
-			return;
-		}
+		string pacmanPath = "";
+		BFS(d, visited, boardAsGraph, player, destinations[i], pacmanPath);
+		int minPathSteps = pacmanPath.length();
 
 		// goes though ghosts
 		for (int j = 0; j < ghosts.size(); j++)
@@ -96,8 +97,14 @@ void solve(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& pl
 
 			if (currentPath.length() < minPathSteps)
 			{
-				minPathSteps = currentPath.length();
+				pacmanEscaped = false;
+				break;
 			}
+		}
+		if (pacmanEscaped) 
+		{
+			writeAnswerToFile("output.txt", true, pacmanPath);
+			return;
 		}
 	}
 
@@ -239,7 +246,7 @@ void writeAnswerToFile(string fileName, bool foundPath, string path)
 	}
 	file.close();
 }
-
+//--------------------------------------------------------------------------------------//
 void getPath(string& path, Node curr, vector<vector<int>>& distances, Point src)
 {
 	Point p = curr.p;
