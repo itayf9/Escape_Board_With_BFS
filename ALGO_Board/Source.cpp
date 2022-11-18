@@ -7,7 +7,7 @@
 #include <map>
 using namespace std;
 
-typedef struct Point 
+typedef struct Point
 {
 	int x, y;
 	bool isExit;
@@ -36,7 +36,7 @@ void solve(vector<vector <int>>& board, vector<Point>& ghosts, Point& player);
 void BFS(vector<vector<int>>& d, vector<vector<bool>>& visited, vector<vector <bool>>& mat, Point src, Point dest, string& path);
 vector<vector <int>> readFile(string fileName, Point& player, vector<Point>& ghosts);
 void getPath(string& path, Node curr, vector<vector<int>>& distances, Point src);
-bool BFSMeshupar(vector<vector <int>>& board,	Point src, vector<Point>& ghosts, string& path);
+bool BFSMeshupar(vector<vector <int>>& board, Point src, vector<Point>& ghosts, string& path);
 void solveYashan(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& player, vector<Point>& destinations);
 
 //--------------------------------------------------------------------------------------//
@@ -56,30 +56,271 @@ int main(int argc, char* argv[])
 	solve(board, ghosts, player);
 	auto t2 = high_resolution_clock::now();
 	auto ms_int = duration_cast<milliseconds>(t2 - t1);
-	duration<double, std::milli> time_taken = t2 - t1;	
+	duration<double, std::milli> time_taken = t2 - t1;
 	cout << "Solved successfully " << time_taken.count() / 1000 << " seconds" << endl;
 }
 //--------------------------------------------------------------------------------------//
+//--------------------------------------------------------------------------------------//
 bool isValid(int row, int col)
-{ 
-	return (row >= 0) && (col >= 0) && (row < N) && (col < M); 
+{
+	return (row >= 0) && (col >= 0) && (row < N) && (col < M);
 }
+//--------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------//
 void solve(vector<vector <int>>& board, vector<Point>& ghosts, Point& player)
 {
 	string path = "";
 	bool pathFound = BFSMeshupar(board, player, ghosts, path);
-	if (pathFound) 
+	if (pathFound)
 	{
 		writeAnswerToFile("output.txt", true, path);
+		cout << "YES" << endl << path.length() << endl << path << endl;
 	}
-	else 
+	else
 	{
 		writeAnswerToFile("output.txt", false, "");
+		cout << "NO" << endl;
 	}
 }
 //--------------------------------------------------------------------------------------//
-void BFS(vector<vector<int>>& distances, vector<vector<bool>>& visited, vector<vector <bool>>& mat,Point src, Point dest, string& path)
+//--------------------------------------------------------------------------------------//
+vector<vector <int>> readFile(string fileName, Point& player, vector<Point>& ghosts) // opened the next screen file, read the data from it, and writes it to the 'board'
+{
+	char currChar;
+
+	ifstream file(fileName);
+
+	if (!file.is_open()) // fails to open
+	{
+		cout << "cant open file" << endl;
+	}
+
+	// read N & M first
+	file >> N >> M;
+	currChar = file.get(); // get the extra \n
+
+	vector<vector<int>> board(N, vector<int>(M, 0));
+
+	for (int i = 0; i < N; i++) // fills the board, and converts the file's data to the borad's symbols
+		for (int j = 0; j < M; j++)
+		{
+			currChar = file.get();
+			if (currChar == '\n')
+			{
+				currChar = file.get();
+			}
+
+			switch (currChar)
+			{
+			case 'A':
+				player = Point(j, i);
+				board[i][j] = 1;
+				break;
+
+			case 'M':
+				ghosts.push_back(Point(j, i));
+				board[i][j] = 2; // 2 == ghost
+				break;
+
+			case '.': // exit points == dest
+				if (j == 0 || i == 0 || j == M - 1 || i == N - 1)
+					board[i][j] = 3; // 3 == exit point
+				else
+				{
+					board[i][j] = 1;
+				}
+				break;
+
+			case '#':
+				// board[i][j] = 0; // 0 == wall
+				break;
+			default:
+				cout << "bad file. could not read all characters";
+				return board;
+			}
+		}
+	file.close();
+	return board;
+}
+//--------------------------------------------------------------------------------------//
+//--------------------------------------------------------------------------------------//
+void writeAnswerToFile(string fileName, bool foundPath, string path)
+{
+	ofstream file(fileName);
+	if (foundPath)
+	{
+		file << "YES" << endl;
+		file << path.length() << endl;
+		file << path;
+	}
+	else
+	{
+		file << "NO" << endl;
+	}
+	file.close();
+}
+//--------------------------------------------------------------------------------------//
+//--------------------------------------------------------------------------------------//
+void getPath(string& path, Node curr, vector<vector<int>>& distances, Point src)
+{
+	Point p = curr.p;
+	int x = p.x, y = p.y;
+	int dist = curr.distance;
+	// Assign the distance of destination to the distance matrix
+	distances[p.y][p.x] = dist;
+	// Iterate until source is reached
+	while (x != src.x || y != src.y)
+	{
+
+		// Append DOWN
+		if (y > 0 && distances[y - 1][x] == dist - 1)
+		{
+			path += 'D';
+			y--;
+		}
+
+		// Append UP
+		if (y < N - 1 && distances[y + 1][x] == dist - 1)
+		{
+			path += 'U';
+			y++;
+		}
+
+		// Append RIGHT
+		if (x > 0 && distances[y][x - 1] == dist - 1) {
+			path += 'R';
+			x--;
+		}
+
+		// Append LEFT
+		if (x < M - 1 && distances[y][x + 1] == dist - 1)
+		{
+			path += 'L';
+			x++;
+		}
+		dist--;
+	}
+}
+//--------------------------------------------------------------------------------------//
+//--------------------------------------------------------------------------------------//
+bool BFSMeshupar(vector<vector <int>>& board, Point src, vector<Point>& ghosts, string& path)
+{
+	int dRow[] = { -1, 0, 0, 1 };
+	int dCol[] = { 0, -1, 1, 0 };
+	bool missionAcomplished = false;
+
+	// init vectors
+	vector<vector<int>> distances(N, vector<int>(M, -1));
+	vector<vector<bool>> visited(N, vector<bool>(M, false));
+
+	// Distance of start cell is 0
+	distances[src.y][src.x] = 0;
+	visited[src.y][src.x] = true;
+
+	queue<Node> queue;
+	Node source = { src, 0 }; 	// Distance of source cell is 0
+
+	queue.push(source); 	// Enqueue source  == pacman
+
+	for (int i = 0; i < ghosts.size(); i++) // Enqueue ghosts
+	{
+		Node ghost = { ghosts[i], 0, true };
+		queue.push(ghost);
+	}
+
+	int destInd = 0;
+	while (!queue.empty())
+	{
+		Node curr = queue.front();
+		Point p = curr.p;
+
+		// If the destination cell is reached, then find the path
+		if (p.isExit && !curr.isGhost)
+		{
+			getPath(path, curr, distances, src);
+			reverse(path.begin(), path.end()); // Reverse the backtracked path
+			missionAcomplished = true;
+			break;
+		}
+		// Pop the start of queue
+		queue.pop();
+		// Explore all adjacent directions
+		for (int i = 0; i < 4; i++)
+		{
+			int row = p.y + dRow[i];
+			int col = p.x + dCol[i];
+
+
+			// If the current cell is valid cell and can be traversed
+			if (isValid(row, col) && (board[row][col] != 0) && !visited[row][col])
+			{
+				// Mark the adjacent cells as visited
+				visited[row][col] = true;
+
+				bool isExit = board[row][col] == 3;
+
+				// Enqueue the adjacent cells
+				int newDistance;
+				if (curr.isGhost)
+				{
+					newDistance = -1;
+				}
+				else
+				{
+					newDistance = curr.distance + 1;
+				}
+				Node adjCell = { { col, row, isExit }, newDistance, curr.isGhost };
+
+				queue.push(adjCell);
+
+				// Update the distance of the adjacent cells
+				distances[row][col] = curr.distance + 1;
+			}
+		}
+	}
+	// If the destination is not reachable
+	return missionAcomplished;
+}
+//--------------------------------------------------------------------------------------//
+//--------------------------------------------------------------------------------------//
+void solveYashan(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& player, vector<Point>& destinations)
+{
+	vector<vector<int>> d(N, vector<int>(M, -1));
+	vector<vector<bool>> visited(N, vector<bool>(M, false));
+	bool pacmanEscaped;
+
+	// goes through destinations
+	for (int i = 0; i < destinations.size(); i++)
+	{
+		pacmanEscaped = true;
+		// goes to the player
+		string pacmanPath = "";
+		BFS(d, visited, boardAsGraph, player, destinations[i], pacmanPath);
+		int minPathSteps = pacmanPath.length();
+
+		// goes though ghosts
+		for (int j = 0; j < ghosts.size(); j++)
+		{
+			string currentPath = "";
+			BFS(d, visited, boardAsGraph, ghosts[j], destinations[i], currentPath);
+
+			if (currentPath.length() < minPathSteps)
+			{
+				pacmanEscaped = false;
+				break;
+			}
+		}
+		if (pacmanEscaped)
+		{
+			writeAnswerToFile("output.txt", true, pacmanPath);
+			return;
+		}
+	}
+
+	writeAnswerToFile("output.txt", false, "");
+}
+//--------------------------------------------------------------------------------------//
+void BFS(vector<vector<int>>& distances, vector<vector<bool>>& visited, vector<vector <bool>>& mat, Point src, Point dest, string& path)
 {
 	int dRow[] = { -1, 0, 0, 1 };
 	int dCol[] = { 0, -1, 1, 0 };
@@ -144,227 +385,5 @@ void BFS(vector<vector<int>>& distances, vector<vector<bool>>& visited, vector<v
 	// If the destination is not reachable
 	if (!missionAcomplished)
 		return;
-}
-//--------------------------------------------------------------------------------------//
-vector<vector <int>> readFile(string fileName, Point& player, vector<Point>& ghosts) // opened the next screen file, read the data from it, and writes it to the 'board'
-{
-	char currChar;
-
-	ifstream file(fileName);
-
-	if (!file.is_open()) // fails to open
-	{
-		cout << "cant open file" << endl;
-	}
-
-	// read N & M first
-	file >> N >> M;
-	currChar = file.get(); // get the extra \n
-
-	vector<vector<int>> board(N, vector<int>(M, 0));
-
-	for (int i = 0; i < N; i++) // fills the board, and converts the file's data to the borad's symbols
-		for (int j = 0; j < M; j++)
-		{
-			currChar = file.get();
-			if (currChar == '\n') 
-			{
-				currChar = file.get();
-			}
-
-			switch (currChar)
-			{
-			case 'A':
-				player = Point(j, i);
-				board[i][j] = 1;
-				break;
-
-			case 'M':
-				ghosts.push_back(Point(j, i)); 
-				board[i][j] = 2; // 2 == ghost
-				break;
-
-			case '.': // exit points == dest
-				if (j == 0 || i == 0 || j == M - 1 || i == N - 1)
-					board[i][j] = 3; // 3 == exit point
-				else 
-				{
-					board[i][j] = 1;
-				}
-				break;
-
-			case '#':
-				// board[i][j] = 0; // 0 == wall
-				break;
-			default:
-				cout << "bad file. could not read all characters";
-				return board;
-			}
-		}
-	file.close();
-	return board;
-}
-//--------------------------------------------------------------------------------------//
-void writeAnswerToFile(string fileName, bool foundPath, string path)
-{
-	ofstream file(fileName);
-	if (foundPath) 
-	{
-		file << "YES" << endl;
-		file << path.length() << endl;
-		file << path;
-	}
-	else 
-	{
-		file << "NO" << endl;
-	}
-	file.close();
-}
-//--------------------------------------------------------------------------------------//
-void getPath(string& path, Node curr, vector<vector<int>>& distances, Point src)
-{
-	Point p = curr.p;
-	int x = p.x, y = p.y;
-	int dist = curr.distance;
-	// Assign the distance of destination to the distance matrix
-	distances[p.y][p.x] = dist;
-	// Iterate until source is reached
-	while (x != src.x || y != src.y)
-	{
-
-		// Append DOWN
-		if (y > 0 && distances[y - 1][x] == dist - 1)
-		{
-			path += 'D';
-			y--;
-		}
-
-		// Append UP
-		if (y < N - 1 && distances[y + 1][x] == dist - 1)
-		{
-			path += 'U';
-			y++;
-		}
-
-		// Append RIGHT
-		if (x > 0 && distances[y][x - 1] == dist - 1) {
-			path += 'R';
-			x--;
-		}
-
-		// Append LEFT
-		if (x < M - 1 && distances[y][x + 1] == dist - 1)
-		{
-			path += 'L';
-			x++;
-		}
-		dist--;
-	}
-}
-//--------------------------------------------------------------------------------------//
-bool BFSMeshupar(vector<vector <int>>& board, Point src, vector<Point>& ghosts,string& path)
-{
-	int dRow[] = { -1, 0, 0, 1 };
-	int dCol[] = { 0, -1, 1, 0 };
-	bool missionAcomplished = false;
-
-	// init vectors
-	vector<vector<int>> distances(N, vector<int>(M, -1));
-	vector<vector<bool>> visited(N, vector<bool>(M, false));
-
-	// Distance of start cell is 0
-	distances[src.y][src.x] = 0;
-	visited[src.y][src.x] = true;
-
-	queue<Node> queue;
-	Node source = { src, 0 }; 	// Distance of source cell is 0
-
-	queue.push(source); 	// Enqueue source  == pacman
-	
-	for (int i = 0; i < ghosts.size(); i++) // Enqueue ghosts
-	{
-		Node ghost = { ghosts[i], 0, true};
-		queue.push(ghost); 
-	}
-	
-	int destInd = 0;
-	while (!queue.empty())
-	{
-		Node curr = queue.front();
-		Point p = curr.p;
-		
-		// If the destination cell is reached, then find the path
-		if (p.isExit && !curr.isGhost)
-		{
-			getPath(path, curr, distances, src);
-			reverse(path.begin(), path.end()); // Reverse the backtracked path
-			missionAcomplished = true;
-			break;
-		}
-		// Pop the start of queue
-		queue.pop();
-		// Explore all adjacent directions
-		for (int i = 0; i < 4; i++)
-		{
-			int row = p.y + dRow[i];
-			int col = p.x + dCol[i];
-
-			
-			// If the current cell is valid cell and can be traversed
-			if (isValid(row, col) && (board[row][col] != 0) && !visited[row][col])
-			{
-				// Mark the adjacent cells as visited
-				visited[row][col] = true;
-
-				bool isExit = board[row][col] == 3;
-
-				// Enqueue the adjacent cells
-				Node adjCell = { { col, row, isExit }, curr.distance + 1, curr.isGhost  };
-				queue.push(adjCell);
-
-				// Update the distance of the adjacent cells
-				distances[row][col] = curr.distance + 1;
-			}
-		}
-	}
-	// If the destination is not reachable
-	return missionAcomplished;
-}
-//--------------------------------------------------------------------------------------//
-void solveYashan(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& player, vector<Point>& destinations)
-{
-	vector<vector<int>> d(N, vector<int>(M, -1));
-	vector<vector<bool>> visited(N, vector<bool>(M, false));
-	bool pacmanEscaped;
-
-	// goes through destinations
-	for (int i = 0; i < destinations.size(); i++)
-	{
-		pacmanEscaped = true;
-		// goes to the player
-		string pacmanPath = "";
-		BFS(d, visited, boardAsGraph, player, destinations[i], pacmanPath);
-		int minPathSteps = pacmanPath.length();
-
-		// goes though ghosts
-		for (int j = 0; j < ghosts.size(); j++)
-		{
-			string currentPath = "";
-			BFS(d, visited, boardAsGraph, ghosts[j], destinations[i], currentPath);
-
-			if (currentPath.length() < minPathSteps)
-			{
-				pacmanEscaped = false;
-				break;
-			}
-		}
-		if (pacmanEscaped)
-		{
-			writeAnswerToFile("output.txt", true, pacmanPath);
-			return;
-		}
-	}
-
-	writeAnswerToFile("output.txt", false, "");
 }
 //--------------------------------------------------------------------------------------//
