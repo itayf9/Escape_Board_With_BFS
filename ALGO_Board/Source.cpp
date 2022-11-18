@@ -32,11 +32,11 @@ int M = 0;
 //--------------------------------------------------------------------------------------//
 bool isValid(int row, int col);
 void writeAnswerToFile(string fileName, bool foundPath, string path);
-void solve(vector<vector <int>>& board, vector<Point>& ghosts, Point& player, vector<Point>& destinations);
+void solve(vector<vector <int>>& board, vector<Point>& ghosts, Point& player);
 void BFS(vector<vector<int>>& d, vector<vector<bool>>& visited, vector<vector <bool>>& mat, Point src, Point dest, string& path);
-vector<string> readFile(string fileName, Point& player, vector<Point>& ghosts, vector<Point>& destinations);
+vector<vector <int>> readFile(string fileName, Point& player, vector<Point>& ghosts);
 void getPath(string& path, Node curr, vector<vector<int>>& distances, Point src);
-bool BFSMeshupar(vector<vector <int>>& board,	Point src, vector<Point>& ghosts, vector<Point>& dest, string& path);
+bool BFSMeshupar(vector<vector <int>>& board,	Point src, vector<Point>& ghosts, string& path);
 void solveYashan(vector<vector <bool>>& boardAsGraph, vector<Point>& ghosts, Point& player, vector<Point>& destinations);
 
 //--------------------------------------------------------------------------------------//
@@ -45,33 +45,7 @@ int main(int argc, char* argv[])
 {
 	vector<Point> ghosts;
 	Point player;
-	vector<Point> destinations;
-	vector<string> board = readFile(argv[1], player, ghosts, destinations);
-
-	vector<vector <int>> walls(N);
-	for (int i = 0; i < N; i++)
-		for (int j = 0; j < M; j++)
-		{
-			if (board[i][j] == '#')
-			{
-				walls[i].push_back(0); // 0 == wall 
-			}
-			else if (board[i][j] == 'M')
-			{
-				walls[i].push_back(2); // 2 == ghost
-			}
-			else
-			{
-				if (j == 0 || i == 0 || j == M - 1 || i == N - 1)
-				{
-					walls[i].push_back(3); // 3 == exit point
-				}
-				else
-				{
-					walls[i].push_back(1); // 1 == empty cell
-				}
-			}
-		}
+	vector<vector <int>> board = readFile(argv[1], player, ghosts);
 
 	using std::chrono::high_resolution_clock;
 	using std::chrono::duration_cast;
@@ -79,7 +53,7 @@ int main(int argc, char* argv[])
 	using std::chrono::milliseconds;
 
 	auto t1 = high_resolution_clock::now();
-	solve(walls, ghosts, player, destinations);
+	solve(board, ghosts, player);
 	auto t2 = high_resolution_clock::now();
 	auto ms_int = duration_cast<milliseconds>(t2 - t1);
 	duration<double, std::milli> time_taken = t2 - t1;	
@@ -91,10 +65,10 @@ bool isValid(int row, int col)
 	return (row >= 0) && (col >= 0) && (row < N) && (col < M); 
 }
 //--------------------------------------------------------------------------------------//
-void solve(vector<vector <int>>& board, vector<Point>& ghosts, Point& player, vector<Point>& destinations)
+void solve(vector<vector <int>>& board, vector<Point>& ghosts, Point& player)
 {
 	string path = "";
-	bool pathFound = BFSMeshupar(board, player, ghosts, destinations, path);
+	bool pathFound = BFSMeshupar(board, player, ghosts, path);
 	if (pathFound) 
 	{
 		writeAnswerToFile("output.txt", true, path);
@@ -172,7 +146,7 @@ void BFS(vector<vector<int>>& distances, vector<vector<bool>>& visited, vector<v
 		return;
 }
 //--------------------------------------------------------------------------------------//
-vector<string> readFile(string fileName, Point& player, vector<Point>& ghosts, vector<Point>& destinations) // opened the next screen file, read the data from it, and writes it to the 'board'
+vector<vector <int>> readFile(string fileName, Point& player, vector<Point>& ghosts) // opened the next screen file, read the data from it, and writes it to the 'board'
 {
 	char currChar;
 
@@ -187,7 +161,7 @@ vector<string> readFile(string fileName, Point& player, vector<Point>& ghosts, v
 	file >> N >> M;
 	currChar = file.get(); // get the extra \n
 
-	vector<string> board(N);
+	vector<vector<int>> board(N, vector<int>(M, 0));
 
 	for (int i = 0; i < N; i++) // fills the board, and converts the file's data to the borad's symbols
 		for (int j = 0; j < M; j++)
@@ -202,24 +176,30 @@ vector<string> readFile(string fileName, Point& player, vector<Point>& ghosts, v
 			{
 			case 'A':
 				player = Point(j, i);
+				board[i][j] = 1;
 				break;
 
 			case 'M':
-				ghosts.push_back(Point(j, i));
+				ghosts.push_back(Point(j, i)); 
+				board[i][j] = 2; // 2 == ghost
 				break;
 
 			case '.': // exit points == dest
 				if (j == 0 || i == 0 || j == M - 1 || i == N - 1)
-					destinations.push_back(Point(j, i, true));
+					board[i][j] = 3; // 3 == exit point
+				else 
+				{
+					board[i][j] = 1;
+				}
 				break;
 
 			case '#':
+				// board[i][j] = 0; // 0 == wall
 				break;
 			default:
 				cout << "bad file. could not read all characters";
 				return board;
 			}
-			board[i] += currChar;
 		}
 	file.close();
 	return board;
@@ -282,7 +262,7 @@ void getPath(string& path, Node curr, vector<vector<int>>& distances, Point src)
 	}
 }
 //--------------------------------------------------------------------------------------//
-bool BFSMeshupar(vector<vector <int>>& board, Point src, vector<Point>& ghosts, vector<Point>& dest,string& path)
+bool BFSMeshupar(vector<vector <int>>& board, Point src, vector<Point>& ghosts,string& path)
 {
 	int dRow[] = { -1, 0, 0, 1 };
 	int dCol[] = { 0, -1, 1, 0 };
@@ -299,8 +279,7 @@ bool BFSMeshupar(vector<vector <int>>& board, Point src, vector<Point>& ghosts, 
 	queue<Node> queue;
 	Node source = { src, 0 }; 	// Distance of source cell is 0
 
-	queue.push(source); 	// Enqueue source cell
-	
+	queue.push(source); 	// Enqueue source  == pacman
 	
 	for (int i = 0; i < ghosts.size(); i++) // Enqueue ghosts
 	{
@@ -330,40 +309,21 @@ bool BFSMeshupar(vector<vector <int>>& board, Point src, vector<Point>& ghosts, 
 			int row = p.y + dRow[i];
 			int col = p.x + dCol[i];
 
-			if (curr.isGhost) // ghost mode
+			
+			// If the current cell is valid cell and can be traversed
+			if (isValid(row, col) && (board[row][col] != 0) && !visited[row][col])
 			{
-				// If the current cell is valid cell and can be traversed
-				if (isValid(row, col) && (board[row][col] != 0) && !visited[row][col])
-				{
-					visited[row][col] = true; // block cell for the pacman
+				// Mark the adjacent cells as visited
+				visited[row][col] = true;
 
-					bool isExit = board[row][col] == 3;
+				bool isExit = board[row][col] == 3;
 
-					// Enqueue the adjacent cells
-					Node adjCell = { { col, row, isExit }, curr.distance + 1, true}; // make sure we enque node as ghost..
-					queue.push(adjCell);
+				// Enqueue the adjacent cells
+				Node adjCell = { { col, row, isExit }, curr.distance + 1, curr.isGhost  };
+				queue.push(adjCell);
 
-					// Update the distance of the adjacent cells
-					distances[row][col] = curr.distance + 1;
-				}
-			}
-			else // pacman mode
-			{
-				// If the current cell is valid cell and can be traversed
-				if (isValid(row, col) && (board[row][col] != 0 && board[row][col] != 2) && !visited[row][col])
-				{
-					// Mark the adjacent cells as visited
-					visited[row][col] = true;
-
-					bool isExit = board[row][col] == 3;
-
-					// Enqueue the adjacent cells
-					Node adjCell = { { col, row, isExit }, curr.distance + 1 };
-					queue.push(adjCell);
-
-					// Update the distance of the adjacent cells
-					distances[row][col] = curr.distance + 1;
-				}
+				// Update the distance of the adjacent cells
+				distances[row][col] = curr.distance + 1;
 			}
 		}
 	}
